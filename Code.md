@@ -24,7 +24,7 @@
 >
 > 贪心：455, 376, 53, 122, 55, 45, 1005, 134, 135, 860, 406, 452, 435, 763, 56, 738, 968
 >
-> 动态规划：509, 70, 62, 63, 343, 96, 416, 1049, 494
+> 动态规划：509, 70, 62, 63, 343, 96, 416, 1049, 494, 474, 518, 377, 70, 322, 279, 139, 198, 213, 337, 121, 122, 123, 188, 309, 714
 >
 > 其他：59
 
@@ -3064,55 +3064,13 @@ public:
 
 ## ⭐动态规划
 
-### 模板
+### 动规要素
 
 - 确定dp数组和下标的含义
 - 确定递推公式
 - dp数组初始化
 - 确定遍历顺序
 - 举例推导dp数组
-
-```c++
-void bag_01() {
-    vector<int> weight = {1, 3, 4};
-    vector<int> value = {15, 20, 30};
-    int bagweight = 4;
-	
-    // 二维数组-模板
-    vector<vector<int>> dp(weight.size(), vector<int>(value.size(), 0));
-    // 初始化
-    for (int j = weight[0]; j <= bagweight; j++) {
-        dp[0][j] = value[0];
-    }   
-    // i,j 都从 1 开始遍历，因为下标为 0 的都初始化过了
-    for (int i = 1; i < weight.size(); i++) {
-        for (int j = 1; j <= bagweight; j++) {
-            if (j < weight[i]) {  // 不选i
-                dp[i][j] = dp[i - 1][j];
-            } else {              // 选i
-                dp[i][j] = max(dp[i - 1][j], dp[i - 1][j - weight[i]] + value[i]);
-            }
-        }
-    }
-    
-    // 一维数组-模板
-    vector<int> dp(bagWeight + 1, 0);    
-    for (int i = 0; i < weight.size(); i++) {
-         // 背包重量的【遍历必须在里边】。如果放在外边，那么背包只放了一个物品；放在里边，相当于考虑了 0...i 这些物品
-         // 一维dp数组，用【倒序】，保证了物品不会重复放，而且本质还是对二维数组的遍历，右下角的值依赖上一层左上角的值
-         // j >= nums[i] 防止下标溢出        
-         for (int j = bagweight; j >= weight[i]; j--) {
-             dp[j] = max(dp[j], dp[j - weight[i]] + value[i]);
-         }
-    }
-
-    cout << dp[weight.size() - 1][bagweight] << endl;
-}
-
-int main() {
-    bag_01();
-}
-```
 
 ### 斐波那契数 #509
 
@@ -3250,6 +3208,50 @@ public:
 };
 ```
 
+### 0-1背包模板
+
+```c++
+void bag_01() {
+    vector<int> weight = {1, 3, 4};
+    vector<int> value = {15, 20, 30};
+    int bagweight = 4;
+	
+    // 二维数组-模板
+    vector<vector<int>> dp(weight.size(), vector<int>(value.size(), 0));
+    // 初始化
+    for (int j = weight[0]; j <= bagweight; j++) {
+        dp[0][j] = value[0];
+    }   
+    // i,j 都从 1 开始遍历，因为下标为 0 的都初始化过了
+    for (int i = 1; i < weight.size(); i++) {
+        for (int j = 1; j <= bagweight; j++) {
+            if (j < weight[i]) {  // 不选i
+                dp[i][j] = dp[i - 1][j];
+            } else {              // 选i
+                dp[i][j] = max(dp[i - 1][j], dp[i - 1][j - weight[i]] + value[i]);
+            }
+        }
+    }
+    
+    // 一维数组-模板
+    vector<int> dp(bagWeight + 1, 0);    
+    for (int i = 0; i < weight.size(); i++) {
+         // 背包重量的【遍历必须在里边】。如果放在外边，那么背包只放了一个物品；放在里边，相当于考虑了 0...i 这些物品
+         // 一维dp数组，用【倒序】，保证了物品不会重复放，而且本质还是对二维数组的遍历，右下角的值依赖上一层左上角的值
+         // j >= nums[i] 防止下标溢出        
+         for (int j = bagweight; j >= weight[i]; j--) {
+             dp[j] = max(dp[j], dp[j - weight[i]] + value[i]);
+         }
+    }
+
+    cout << dp[weight.size() - 1][bagweight] << endl;
+}
+
+int main() {
+    bag_01();
+}
+```
+
 ### 分割等和子集 #416
 
 ```c++
@@ -3332,6 +3334,498 @@ public:
         }
 
         return dp[bagSize];
+    }
+};
+```
+
+### 一和零 #474
+
+```c++
+class Solution {
+public:
+    int findMaxForm(vector<string>& strs, int m, int n) {
+        vector<vector<int>> dp(m + 1, vector<int>(n + 1, 0));
+
+        // dp[i][j]中的 i 不是二维dp中的物品序号，这里也是重量，只不过这个是重量为两维的一维dp背包问题
+        // 对于strs的遍历相当于是对物品的遍历
+        for (string str : strs) {
+            int zero_num = 0, one_num = 0;
+            for (char ch : str) {
+                if (ch == '0') {
+                    zero_num++;
+                } else {
+                    one_num++;
+                }
+            }
+            // 这里两层循环都是对重量的遍历，只不过这个是重量为两维的一维dp背包问题
+            // 本质还是采用的一维dp，所以都采用倒序，前边初始化为0就行，嵌套顺序在里边在外边无所谓
+            for (int i = m; i >= zero_num; i--) {
+                for (int j = n; j >= one_num; j--) {
+                    dp[i][j] = max(dp[i][j], dp[i - zero_num][j - one_num] + 1);
+                }
+            }
+        }
+        return dp[m][n];
+    }
+};
+```
+
+### 完全背包模板
+
+```c++
+// 0-1背包
+for(int i = 0; i < weight.size(); i++) { // 遍历物品
+    for(int j = bagWeight; j >= weight[i]; j--) { // 遍历背包容量，倒序
+        dp[j] = max(dp[j], dp[j - weight[i]] + value[i]);
+    }
+}
+// 完全背包
+// 0-1背包内嵌循环是从大到小倒序遍历，是因为要保证每个物品仅被添加一次
+// 完全背包的物品可以重复添加，所以从小到大正序遍历
+// 两个for循环的顺序都可以，但是问装满背包有几种方式的时候， for循环的顺序就有区别了，要根据实际题目而变
+for(int i = 0; i < weight.size(); i++) { // 遍历物品
+    for(int j = weight[i]; j <= bagWeight; j++) { // 遍历背包容量，正序
+        dp[j] = max(dp[j], dp[j - weight[i]] + value[i]);
+    }
+}
+```
+
+### 零钱兑换II #518
+
+```c++
+class Solution {
+public:
+    int change(int amount, vector<int>& coins) {
+        // if (amount == 0) return 0; // 这一行不要加
+        vector<int> dp(amount + 1, 0);
+
+        // 注意此题目是要求装成背包重量的组合数
+        // 1. 求总和的时候，推导公式一般为 dp[j] += dp[j - coins[i]]
+        // 2. 求总和的时候，dp[0]=1是必须的，否则后边没法累加，但是非0下标的必须为0，防止多加
+        // 3. 不仅求总和，而且是组合数，也就是{1,5}和{5,1}是一种情况，此时必须先遍历物品，先把1放进去计算，后把5放进去
+        dp[0] = 1;
+        for (int i = 0; i < coins.size(); i++) {
+            for (int j = coins[i]; j <= amount; j++) {
+                dp[j] += dp[j - coins[i]];
+            }
+        }
+
+        return dp[amount];
+    }
+};
+```
+
+### 组合总和(排列) #377
+
+```c++
+class Solution {
+public:
+    int combinationSum4(vector<int>& nums, int target) {
+        vector<int> dp(target + 1, 0);
+
+        // 1. 一定要初始化dp[0]
+        // 2. 组合：背包遍历在内
+        //    排列：背包遍历在外
+        // 3. 完全背包：内循环从小到大遍历
+        dp[0] = 1;
+        for (int j = 0; j <= target; j++) {
+            // for (int i = 0; nums[i] <= j; i++) { 这样判断不行
+            for (int i = 0; i < nums.size(); i++) {
+                if (nums[i] <= j && dp[j] < INT_MAX - dp[j - nums[i]]) { // c++用例，有两个数相加会溢出，需要判断一下
+                    dp[j] += dp[j - nums[i]];
+                }                
+            }
+        }
+
+        return dp[target];       
+    }
+};
+```
+
+### 爬楼梯 #70
+
+```c++
+class Solution {
+public:
+    int climbStairs(int n) {
+        vector<int> dp(n + 1, 0);
+
+        dp[0] = 1;
+        // 相当于组合总和那个题，数组只有两个数 {1，2}，然后总和为 n
+        // 把内循环改为 i<=m 就是相当于可以爬 1.2.3....m 阶台阶的答案
+        for (int j = 0; j <=n; j++) {
+            for (int i = 1; i <= 2; i++) {
+                if (i <= j) {
+                    dp[j] += dp[j - i];
+                }
+            }
+        }
+
+        return dp[n];
+    }
+};
+```
+
+### 零钱兑换 #322
+
+```c++
+class Solution {
+public:
+    int coinChange(vector<int>& coins, int amount) {
+        vector<int> dp(amount + 1, INT_MAX);
+
+        // dp[0]的初始化一定要好好想清楚，要模拟一下数组，这里是0否则后边比较的时候总是赋值为INT_MAX
+        // 非零下标的初始化一般初始化值是一样的，因为这个题要比较最小值，所以非零下标初始化为INT_MAX
+        dp[0] = 0;
+        for (int i = 0; i < coins.size(); i++) {
+            for (int j = coins[i]; j <= amount; j++) {
+                if (dp[j - coins[i]] < INT_MAX) {  // 要加一个判断，否则如果dp[j-coins[i]]==INT_MAX，后边再加1就溢出了
+                    dp[j] = min(dp[j], dp[j - coins[i]] + 1);  // 别忘了+1
+                }                
+            }
+        }
+
+        return dp[amount] == INT_MAX ? -1 : dp[amount];
+    }
+};
+```
+
+### 完全平方数 #279
+
+```c++
+class Solution {
+public:
+    int numSquares(int n) {
+        vector<int> dp(n + 1, INT_MAX);
+
+        dp[0] = 0;
+        int m = sqrt(n);
+        for (int i = 1; i <= m; i++) {
+            for (int j = i * i; j <= n; j++) {
+                if (dp[j - i * i] < INT_MAX) {
+                    dp[j] = min(dp[j], dp[j - i * i] + 1);
+                }                
+            }
+        }
+
+        return dp[n];
+    }
+};
+```
+
+### 单词拆分 #139
+
+```c++
+class Solution {
+public:
+    bool wordBreak(string s, vector<string>& wordDict) {
+        unordered_set wordSet(wordDict.begin(), wordDict.end());
+        vector<int> dp(s.size() + 1, 0);
+
+        // 1. 背包是字符串s，字典里的每一个字符串是物品
+        // 2. 这个题特殊就特殊在dp[i]的含义上，dp[i]代表长度为i的子串，能不能由字典里的单词拼接成的结果，i 是长度！！
+        // 3. dp[i]对应子串的下标是 [0,...i-1], s.substr(j, i-j)对应下标 [j,...,i-1]
+        // 4. dp[0]一定是true，否则永远进不到if那一句里，非零下标的初始化为false
+        dp[0] = true;
+        for (int i = 1; i <= s.size(); i++) {
+            for (int j = 0; j < i; j++) {
+                string substr = s.substr(j, i - j);  // substr(截取开始下标，截取长度)
+                if (wordSet.find(substr) != wordSet.end() && dp[j] == true) {
+                    dp[i] = true;
+                }
+            }
+        }
+
+        return dp[s.size()];
+    }
+};
+```
+
+### 多重背包模板
+
+```c++
+void test_multi_pack() {
+    vector<int> weight = {1, 3, 4};
+    vector<int> value = {15, 20, 30};
+    vector<int> nums = {2, 3, 2};
+    int bagWeight = 10;
+    vector<int> dp(bagWeight + 1, 0);
+
+
+    for(int i = 0; i < weight.size(); i++) { // 遍历物品
+        for(int j = bagWeight; j >= weight[i]; j--) { // 遍历背包容量
+            // 以上为01背包，然后加一个遍历个数
+            for (int k = 1; k <= nums[i] && (j - k * weight[i]) >= 0; k++) { // 遍历个数
+                dp[j] = max(dp[j], dp[j - k * weight[i]] + k * value[i]);
+            }
+        }
+        // 打印一下dp数组
+        for (int j = 0; j <= bagWeight; j++) {
+            cout << dp[j] << " ";
+        }
+        cout << endl;
+    }
+    cout << dp[bagWeight] << endl;
+}
+int main() {
+    test_multi_pack();
+}
+```
+
+### 打家劫舍 #198
+
+```c++
+class Solution {
+public:
+    int rob(vector<int>& nums) {
+        if (nums.size() == 0) return 0;
+        if (nums.size() == 1) return nums[0];
+
+        vector<int> dp(nums.size(), 0);
+        dp[0] = nums[0];
+        dp[1] = max(nums[0], nums[1]);
+        // 1. dp[i]代表下标 [0,...i] 数组的偷窃最高金额
+        // 2. i 偷的话, dp[i] = dp[i-2] + nums[i], 完全不考虑 i-1 的情况
+        // 3. i 不偷的话, dp[i] = dp[i - 1], 考虑 i-1 的情况，但是并不意味着 i-1 是要偷的
+        for (int i = 2; i < nums.size(); i++) {
+            dp[i] = max(dp[i - 1], dp[i - 2] + nums[i]);
+        }
+
+        return dp[nums.size() - 1];
+    }
+};
+```
+
+### 打家劫舍II #213
+
+```c++
+class Solution {
+public:
+    int rob(vector<int>& nums) {
+        if (nums.size() == 0) return 0;
+        if (nums.size() == 1) return nums[0];
+        
+        // 有三种情况：不考虑首尾元素，不考虑首元素，不考虑尾元素。
+        // 第二三种情况包含了第一种，所以考虑后两种即可。注意考虑，不等于就一定要选那个元素。
+        int left = rob_range(nums, 0, nums.size() - 2);
+        int right = rob_range(nums, 1, nums.size() - 1);
+        return max(left, right);
+    }
+    int rob_range(vector<int>& nums, int begin, int end) {
+        // [begin, end]
+        if (end == begin) return nums[begin];
+
+        // 1. 一定注意，所有标了 begin、end 下标的题目，都要切记不要从下标为 0，1 开始赋值了
+        // 2. dp 的长度还是声明为 nums.size() 个，但是只用 [begin,end] 这一部分，方便后边赋值
+        vector<int> dp(nums.size(), 0);  // dp[i] : 0,...,i => 实际只考虑 [begin,...,end] 范围内的数
+        dp[begin] = nums[begin];
+        dp[begin + 1] = max(nums[begin], nums[begin + 1]);
+
+        for (int i = begin + 2; i <= end; i++) {
+            dp[i] = max(dp[i - 1], dp[i - 2] + nums[i]);
+        }
+
+        return dp[end];
+    }
+};
+```
+
+### 打家劫舍III #337
+
+```c++
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int rob(TreeNode* root) {
+        vector<int> res = rob_tree(root);
+        return max(res[0], res[1]);
+    }
+    vector<int> rob_tree(TreeNode* root) {
+        if (root == nullptr) return {0, 0};
+        
+        // 1. 某个节点偷不偷是两个状态，不太好用一个数表示，所以用两个数表示
+        // 2. 树形dp的典型题，确定遍历顺序是最关键的
+        //    偷不偷当前节点的最后结果值依赖于子节点的结果，所以采用后序遍历
+        vector<int> left = rob_tree(root->left);
+        vector<int> right = rob_tree(root->right);
+        // 3. res1：不偷当前节点，那么就考虑两个子节点的各自两个状态，选最大的那个
+        //    res2：偷的话，就当前节点值加上两个子节点不偷的值
+        int res1 = max(left[0], left[1]) + max(right[0], right[1]);
+        int res2 = root->val + left[0] + right[0];
+        
+
+        return {res1, res2}; 
+    }
+};
+```
+
+### 买卖股票的最佳时机 #121
+
+```c++
+// 贪心
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        int low = INT_MAX;
+        int res = 0;
+        // 每次记录左边最小的值，并且每次都计算最大的间距
+        // 因为不一定是减去最小的值才是最大的间距
+        for (int i = 0; i < prices.size(); i++) {
+            low = min(low, prices[i]);
+            res = max(res, prices[i] - low);
+        }
+        return res;
+    }
+};
+// 动规
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        // dp[i]代表下标为 i 的这个股票是否持有的情况下的现金数量，这题难在怎么定义dp
+        // 用两个状态去表示，dp[i][0] 代表不持有第i支股票的现金数，dp[i][1]代表持有的现金
+        vector<vector<int>> dp(prices.size(), vector<int>(2, 0));
+        dp[0][0] = 0;
+        dp[0][1] = -prices[0];
+        for (int i = 1; i < prices.size(); i++) {
+            // 1. 不持有的话，由两个状态推出，dp[i-1]不持有那么继续保持，dp[i-1]持有的话那么就相当于以prices[i]的价格卖出去
+            // 2. 持有的话，有两个状态推出，dp[i-1]持有的话继续保持，dp[i-1]不持有的话相当于以prices[i]的价格买入，现金为-prices[i]
+            dp[i][0] = max(dp[i - 1][0], prices[i] + dp[i - 1][1]); // 因为买入的时候取的是负数 -prices[i]，所以这里是加号
+            dp[i][1] = max(dp[i - 1][1], -prices[i]);
+        }
+
+        return dp[prices.size() - 1][0];
+    }
+};
+```
+
+### 买卖股票的最佳时机II #122
+
+```c++
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        vector<vector<int>> dp(prices.size(), vector<int>(2, 0));
+        dp[0][0] = 0;
+        dp[0][1] = -prices[0];
+
+        for (int i = 1; i < prices.size(); i++) {
+            dp[i][0] = max(dp[i - 1][0], prices[i] + dp[i - 1][1]);
+            // 这里是跟121那个题唯一不同的地方，121题因为只会买入一次，但是这个题可以买入多次
+            // 买的时候之前可能已经产生了利润，所以 -prices[i] 要加上 dp[i-1][1]
+            dp[i][1] = max(dp[i - 1][1], -prices[i] + dp[i - 1][0]); 
+        }
+
+        return dp[prices.size() - 1][0];
+    }
+};
+```
+
+### 买卖股票的最佳时机III #123
+
+```c++
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        // 一共五个状态:
+        // 0. 没有操作  1. 第一次买入的持有  2. 第一次卖出的非持有
+        //              3. 第二次买入的持有  4. 第二次卖出的非持有
+        // dp[i][j] 表示第 i 天，j 为[0-4] 五个状态，dp[i][j]表示第i天状态j时的最大现金数
+        vector<vector<int>> dp(prices.size(), vector<int>(5, 0));
+        dp[0][0] = 0;
+        dp[0][1] = -prices[0];
+        dp[0][2] = 0;
+        dp[0][3] = -prices[0];
+        dp[0][4] = 0;
+        for (int i = 1; i < prices.size(); i++) {
+            dp[i][0] = dp[i - 1][0];
+            dp[i][1] = max(dp[i - 1][1], -prices[i] + dp[i - 1][0]);
+            dp[i][2] = max(dp[i - 1][2], prices[i] + dp[i - 1][1]);
+            dp[i][3] = max(dp[i - 1][3], -prices[i] + dp[i - 1][2]);
+            dp[i][4] = max(dp[i - 1][4], prices[i] + dp[i - 1][3]);
+        }
+
+        return dp[prices.size() - 1][4];
+    }
+};
+```
+
+### 买卖股票的最佳时机IV #188
+
+```c++
+class Solution {
+public:
+    int maxProfit(int k, vector<int>& prices) {
+        if (prices.size() == 0) return 0;
+        vector<vector<int>> dp(prices.size(), vector<int>(1 + 2 * k, 0));
+        for (int i = 1; i <= k; i++) {
+            dp[0][2 * i - 1] = -prices[0];
+            dp[0][2 * i] = 0;
+        }
+
+        for (int i = 1; i < prices.size(); i++) {
+            for (int j = 1; j <= k; j++) {
+                dp[i][2 * j - 1] = max(dp[i - 1][2 * j - 1], -prices[i] + dp[i - 1][2 * j - 2]);
+                dp[i][2 * j] = max(dp[i - 1][2 * j], prices[i] + dp[i - 1][2 * j - 1]);
+            }
+        }
+
+        return dp[prices.size() - 1][2 * k];
+    }
+};
+```
+
+### 最佳买卖股票时机含冷冻期 # 309
+
+```c++
+class Solution {
+public:
+    int maxProfit(vector<int>& prices) {
+        // 四个状态：
+        // 0. 持有股票，可以是今天刚买的，也可以是之前买的一直没卖
+        // 1. 不持有股票，今天卖的 
+        // 2. 不持有股票，而且是之前卖的，并且过了冷冻期，也就是说最晚是前天卖的
+        // 3. 不持有股票，今天是冷冻期，也就是说是昨天卖的
+        vector<vector<int>> dp(prices.size(), vector<int>(4, 0));
+        dp[0][0] = -prices[0];
+
+        for (int i = 1; i < prices.size(); i++) {
+            dp[i][0] = max(dp[i - 1][0], max(-prices[i] + dp[i - 1][2], -prices[i] + dp[i - 1][3]));
+            dp[i][1] = prices[i] + dp[i - 1][0];
+            dp[i][2] = max(dp[i - 1][2], dp[i - 1][3]);
+            dp[i][3] = dp[i - 1][1];
+        }
+
+        return max(dp[prices.size() - 1][1], max(dp[prices.size() - 1][2], dp[prices.size() - 1][3]));
+
+    }
+};
+```
+
+### 买卖股票的最佳时机含手续费 #714
+
+```c++
+class Solution {
+public:
+    int maxProfit(vector<int>& prices, int fee) {
+        vector<vector<int>> dp(prices.size(), vector<int>(2, 0));
+        dp[0][1] = -prices[0];
+
+        for (int i = 1; i < prices.size(); i++) {
+            dp[i][0] = max(dp[i - 1][0], prices[i] - fee + dp[i - 1][1]);
+            dp[i][1] = max(dp[i - 1][1], -prices[i] + dp[i - 1][0]);
+        }
+
+        return dp[prices.size() - 1][0];
     }
 };
 ```
