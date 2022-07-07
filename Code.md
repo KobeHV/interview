@@ -3830,6 +3830,291 @@ public:
 };
 ```
 
+### 最长递增子序列 #300
+```cpp
+class Solution {
+public:
+    int lengthOfLIS(vector<int>& nums) {
+    	// 非连续
+        // 1. dp的含义如何定义很难，定义的原则就是方便推导出转移方程，如果不好推倒那么要想是不是换一种定义
+        // 2. 此题目，定义 dp[i] 是 从下标 0 到以 nums[i] 这个元素为结尾的子序列的最长严格递增子序列的长度
+        // 3. 注意一定是以 nums[i] 为结尾，这样就容易推导出转移方程了，要在 [0,...,i-1] 这个范围进行遍历
+        // 4. 每一个元素至少本身是严格递增子序列，所以初始化为 1
+        vector<int> dp(nums.size(), 1);
+        int res = 1;
+        // 这个两层循环，也非常重要
+        for (int i = 1; i < nums.size(); i++) {
+            for (int j = 0; j < i; j++) {
+                if (nums[i] > nums[j]) {
+                    dp[i] = max(dp[i], dp[j] + 1);
+                }
+                // 不大于的时候，直接跳过了，相当于只看了比nums[i]小的，所以要对中间结果进行比较               
+            }
+            // 虽然这个题不是求连续的，但是也要在中间进行比较
+            // 因为dp[i]的定义是以nums[i]为结尾，这样的定义中间都要进行比较
+            // 有疑问的时候，画图模拟一遍就明白了
+            if (dp[i] > res) res = dp[i];
+        }
+
+        return res;
+    }
+};
+```
+### 最长连续递增序列 #674
+```cpp
+class Solution {
+public:
+    int findLengthOfLCIS(vector<int>& nums) {
+    	// 连续
+        vector<int> dp(nums.size(), 1);
+        int res = 1;
+
+        for (int i = 1; i < nums.size(); i++) {
+            if (nums[i] > nums[i - 1]) {
+                dp[i] = dp[i - 1] + 1;
+            } else  {
+                dp[i] = 1;  // continue
+            }
+            if (dp[i] > res) res = dp[i];
+        }
+
+        return res;
+    }
+};
+```
+### 最长重复子数组 #718
+```cpp
+class Solution {
+public:
+    int findLength(vector<int>& nums1, vector<int>& nums2) {
+    	// 连续
+        // 1. dp[i][j] 代表以 nums1[i-1] 和 nums2[j-1] 为结尾的两个数组中最长的公共子数组的长度，子数组注意是连续的
+        // 2. 推导公式: 如果 nums1[i-1] == nums[j-1]，那么 dp[i][j] = dp[i-1][j-1] + 1
+        // 3. 根据数组定义和推导公式，初始化 dp[0][j] 和 dp[i][0] 都是 0 
+        vector<vector<int>> dp(nums1.size() + 1, vector<int>(nums2.size() + 1, 0));
+
+        int res = 0;
+        // 要两层循环，非常关键
+        for (int i = 1; i <= nums1.size(); i++) {
+            for (int j = 1; j <= nums2.size(); j++) {
+                if (nums1[i -  1] == nums2[j  - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                }
+                if (dp[i][j] > res) res = dp[i][j];
+            }            
+        }
+
+        return res;
+    }
+};
+```
+### 最长公共子序列 #1143
+```cpp
+class Solution {
+public:
+    int longestCommonSubsequence(string text1, string text2) {
+    	// 非连续
+        vector<vector<int>> dp(text1.size() + 1, vector<int>(text2.size() + 1, 0));
+
+        // 1. dp[i][j] 代表 text1[0,...,i-1] 和 text2[0,...,j-1] 两个字符串最长子序列的长度
+        // 2. 两种情况：text1[i-1] ==/!= text[j-1] 
+        for (int i = 1; i <= text1.size(); i++) {
+            for (int j = 1; j <= text2.size(); j++) {
+                if (text1[i - 1] == text2[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                } else {
+                    dp[i][j] = max(dp[i - 1][j], dp[i][j - 1]);
+                }
+            }
+        }
+
+        return dp[text1.size()][text2.size()];
+    }
+};
+```
+### 不相交的线 #1035
+```cpp
+class Solution {
+public:
+    int maxUncrossedLines(vector<int>& nums1, vector<int>& nums2) {
+        // 就是求最长公共子序列
+        vector<vector<int>> dp(nums1.size() + 1, vector<int>(nums2.size() + 1, 0));
+
+        for (int i = 1; i <= nums1.size(); i++) {
+            for (int j = 1; j <= nums2.size(); j++) {
+                if (nums1[i - 1] == nums2[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                } else {
+                    dp[i][j] = max(dp[i - 1][j], dp[i][j - 1]);
+                }
+            }
+        }
+
+        return dp[nums1.size()][nums2.size()];
+    }
+};
+```
+### 最大子数组和 #53
+```cpp
+// 贪心
+class Solution {
+public:
+    int maxSubArray(vector<int>& nums) {
+        if(nums.size() == 1) return nums[0];
+        int sum = 0;
+        int res = INT_MIN;
+        for(int i = 0; i < nums.size(); i++) {
+            sum += nums[i];            
+            if(sum > res) {
+                res = sum;
+            }
+            if(sum < 0) sum = 0;
+        }
+
+        return res;
+    }
+};
+// 动规
+class Solution {
+public:
+    int maxSubArray(vector<int>& nums) {
+    	// 连续
+        vector<int> dp(nums.size(), 0);
+        dp[0] = nums[0];
+        
+        // 1. dp[i] 代表以 nums[i] 为结尾的最大的连续子数组的和，需要连续的话都是这样定义
+        // 2. 连续的时候，必须要在过程中进行比较最后的结果
+        int res = nums[0];
+        for (int i = 1; i < nums.size(); i ++) {
+            dp[i] = max(dp[i - 1] + nums[i], nums[i]);
+            if (dp[i] > res) res = dp[i];
+        }
+
+        return res;
+    }
+};
+```
+### 判断子序列 #392
+```cpp
+// 双指针
+class Solution {
+public:
+    bool isSubsequence(string s, string t) {
+        int i = 0, j = 0;
+        for (int j = 0; j < t.size(); j++) {
+            if (s[i] == t[j]) {
+                i++;
+            }
+        }
+        if (i == s.size()) return true;
+        return false;
+    }
+};
+// 动规
+class Solution {
+public:
+    bool isSubsequence(string s, string t) {
+   		// 非连续
+        vector<vector<int>> dp(s.size() + 1, vector<int>(t.size() + 1, 0));
+
+        for (int i = 1; i <= s.size(); i++) {
+            for (int j = 1; j <= t.size(); j++) {
+                if(s[i - 1] == t[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                } else {  // 对 t 进行删除操作，继续匹配
+                    dp[i][j] = dp[i][j - 1];
+                }
+            }
+        }
+        if (dp[s.size()][t.size()] == s.size()) return true;
+        return false;
+    }
+};
+```
+### 不同的子序列 #115
+```cpp
+class Solution {
+public:
+    int numDistinct(string s, string t) {
+   		// 非连续
+        // int,long,long long 都会溢出，要用 unsigned long long
+        vector<vector<unsigned long long>> dp(s.size() + 1, vector<unsigned long long>(t.size() + 1, 0));
+        dp[0][0] = 1;
+        for (int i = 1; i <= s.size(); i++) dp[i][0] = 1; // t为空串，在s中出现一次
+        
+        for (int i = 1; i <= s.size(); i++) {
+            for (int j = 1; j <= t.size(); j++) {
+                // 当s[i-1]==t[j-1]时，s不一定要选择s[i-1]去匹配，还可以选择之前的去匹配
+                // 不相等的时候，就只有一种情况了
+                if (s[i - 1] == t[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1] + dp[i - 1][j];
+                } else {
+                    dp[i][j] = dp[i - 1][j];
+                }
+            }
+        }
+
+        return dp[s.size()][t.size()];
+    }
+};
+```
+### 两个字符串的删除操作 # 49
+```cpp
+class Solution {
+public:
+    int minDistance(string word1, string word2) {
+        vector<vector<int>> dp(word1.size() + 1, vector<int>(word2.size() + 1, 0));
+
+        for (int i = 1; i <= word1.size(); i++) dp[i][0] = i;
+        for (int j = 1; j <= word2.size(); j++) dp[0][j] = j;
+
+        for (int i = 1; i <= word1.size(); i++) {
+            for (int j = 1; j <= word2.size(); j++) {
+                if (word1[i - 1] == word2[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1];
+                } else {  // 不相等就删除，3种情况：各自删除、word1删除、word2删除。
+                    dp[i][j] = min({dp[i - 1][j - 1] + 2, dp[i - 1][j] + 1, dp[i][j - 1] + 1});
+                }
+            }
+        }
+
+        return dp[word1.size()][word2.size()];
+    }
+};
+```
+### 编辑距离 #72
+```cpp
+class Solution {
+public:
+    int minDistance(string word1, string word2) {
+        vector<vector<int>> dp(word1.size() + 1, vector<int>(word2.size() + 1, 0));
+
+        // 1. dp[i][j] 定义为以 word1[i-1] 和 word2[j-1] 为结尾的最少操作数，跟连续子序列的定义类似
+        // 2. word1[i-1] == word2[j-1] 直接 dp[i][j] = dp[i-1][j-1]
+        // 3. word1[i-1] != word2[j-1] 分为三种操作： 删，增，换。
+        //    其中增和删的操作达到的效果是相同的，即只考虑 删 和 换 两种操作。
+        // 4. 删 ： 1) word1删除结尾元素 2)word2删除结尾元素
+        //    换 ：    word1[i-1]替换为word2[j-1]
+        // 5. 注意初始化不为0了, dp[0][j] = j, dp[i][0] = i 即删除 i 个操作
+
+        for (int i = 1; i <= word1.size(); i++) dp[i][0] = i;
+        for (int j = 1; j <= word2.size(); j++) dp[0][j] = j;
+
+        for (int i = 1; i <= word1.size(); i++) {
+            for (int j = 1; j <= word2.size(); j++) {
+                if (word1[i - 1] == word2[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1];
+                } else {
+                    dp[i][j] = min({dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]}) + 1;
+                }
+            }
+        }
+
+        return dp[word1.size()][word2.size()];
+    }
+};
+```
+
 ## ⭐其他
 
 ### 螺旋矩阵 #59
