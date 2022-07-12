@@ -4397,7 +4397,55 @@ public:
 
 ## ⭐C++
 
-- 输入
+### STL
+
+```c++
+### vector
+vector<int> vec;
+vector<int> vec(n, val);
+vector<int> vec(set.begin(), set.end()); // unordered_set<int> set;
+
+vec.size();
+vec.push_back(elem);
+vec.pop_back();
+vec.resize(n);
+vec.empty();
+
+vec.insert(pos, elem);
+vec.erase(pos);
+vec.erase(begin, end); // delete [begin, end);
+
+// #include <algorithm>
+reverse(vec.begin(), vec.end());  
+sort(vec.begin(), vec.end());
+bool cmp(const int &a, const int &b) {
+	return a > b;
+}
+sort(vec.begin(), vec.end(), cmp);
+
+return {};
+return {1, 2, 3};
+
+### set
+set<int> set;
+
+set.find(key);  // set.find(key) != set.end();
+set.count();
+set.insert(val);
+
+### map
+map<int, string> map;
+
+map.find(key);
+map.count();
+map.insert(pair<int, string>(1, "abc"));
+map[1] = "abc";
+
+auto iter = map.find(val);
+for (auto iter = umap.begin(); iter != umap.end(); iter++)
+iter->first;
+iter->second;
+```
 
 ## ⭐面试题
 
