@@ -24,7 +24,9 @@
 >
 > 贪心：455, 376, 53, 122, 55, 45, 1005, 134, 135, 860, 406, 452, 435, 763, 56, 738, 968
 >
-> 动态规划：509, 70, 62, 63, 343, 96, 416, 1049, 494, 474, 518, 377, 70, 322, 279, 139, 198, 213, 337, 121, 122, 123, 188, 309, 714, 300, 674, 718, 1143, 1035, 53, 392, 115, 49, 72, 647, 516
+> 动态规划：509, 70, 62, 63, 343, 96, 416, 1049, 494, 474, 518, 377, 70, 322, 279, 139, 198, 213, 
+>
+> 337, 121, 122, 123, 188, 309, 714, 300, 674, 718, 1143, 1035, 53, 392, 115, 49, 72, 647, 516
 >
 > 其他：59
 
@@ -32,21 +34,31 @@
 
 ### 模板 #704
 
-```C++
-int search(vector<int>& nums, int target){
-    int n = (int)nums.size();
-    if (!n)  return -1;
-    if (n == 1)  return nums[0] == target ? 0 : -1;
+```cpp
+class Solution {
+public:
+    int search(vector<int>& nums, int target) {
+        if (nums.size() == 0) return -1;
 
-    int left = 0, right = n - 1;
-    while(left <= right){
-        int middle = left + (right - left) / 2;
-        if(target < nums[middle]) right = middle - 1;
-        else if(target > nums[middle]) left = middle + 1;
-        else return middle;
+        // 1. 左开右闭
+        // 2. [left, right)
+        // 3. while( < )
+        // 4. right = mid
+        int left = 0, right = nums.size();
+        while (left < right) {
+            int mid = left + (right - left) / 2;
+            if (target < nums[mid]) {  // target 比较都是 < 或者 > , 没有 =
+                right = mid;
+            } else if (target > nums[mid]) {
+                left = mid + 1;
+            } else {
+                return mid;
+            }
+        }
+
+        return -1;
     }
-    return -1;
-}
+};
 ```
 
 ### 搜索旋转排序数组 #33
@@ -55,26 +67,72 @@ int search(vector<int>& nums, int target){
 class Solution {
 public:
     int search(vector<int>& nums, int target) {
-        int n = nums.size();
-        if(!n) return -1;
-        if(n == 1) return nums[0]==target ? 0:-1;
-        int left = 0, right = n - 1;
-        while(left <= right){
-            int mid = left + (right - left)/2;
-            if(nums[mid] == target) return mid;
-            if(nums[left] <= nums[mid]){
-                if(nums[left] <= target && target <= nums[mid]) right = mid - 1;
-                else left = mid + 1;
-            }else{
-                if(nums[mid] <= target && target <= nums[right]) left = mid + 1;
-                else right = mid - 1;
+        if (nums.size() == 0) return -1;
+
+        int left = 0, right = nums.size();
+        while(left < right) {
+            int mid = left + (right - left) / 2;
+            // 旋转后的数组有一个很重要的特点是，随便以一个节点为界，两边至少有一个是有序的
+            // 跟普通二分查找不同的是，如果 target < nums[mid] ，不能直接对 right 赋值
+            // 不先判断 target 与 nums[mid] 的大小，而是先判断哪一边是有序的，然后再判断 target 和 nums[mid] 的大小关系
+            if (target == nums[mid]) {                 
+                return mid;
+            } else if (nums[left] < nums[mid]) {
+                if (nums[left] <= target && target < nums[mid]) {
+                    right = mid;
+                } else {
+                    left = mid + 1;
+                }
+            } else{
+                if (nums[mid] <= target && target <= nums[right - 1]) {
+                    left  = mid + 1;
+                } else {
+                    right = mid;
+                }
+
             }
         }
-    return -1;
+
+        return -1;
     }
 };
 ```
+### 搜索旋转排序数组II #81
+```cpp
+class Solution {
+public:
+    bool search(vector<int>& nums, int target) {
+        if (nums.size() == 0) return -1;
 
+        int left = 0, right = nums.size();
+        while (left < right) {
+            int mid = left + (right - left) / 2;
+
+            if (nums[mid] == target) return true;
+            // 中点跟左端点相同时，因为有重复元素，无法判断左右哪一个是有序的
+            // Z比如 nums=[3,1,2,3,3,3,3], target=2
+            // 让左端点右移一个，减少一个重复项的干扰
+            if (nums[left] == nums[mid]) {
+                left++;
+            } else if (nums[left] < nums[mid]) { // 左边有序, 而且这里一定要 else if，否则上边 left++ 后有可能越界
+                if (nums[left] <= target && target < nums[mid]) {
+                    right = mid;
+                } else {
+                    left = mid + 1;
+                }
+            } else {
+                if (nums[mid] <= target && target <= nums[right - 1]) {
+                    left = mid + 1;
+                } else {
+                    right = mid;
+                }
+            }
+        }
+
+        return false;
+    }
+};
+```
 ## ⭐双指针
 
 ### 移除元素 #27
@@ -85,13 +143,16 @@ public:
 class Solution {
 public:
     int removeElement(vector<int>& nums, int val) {
-        int slowIndex = 0;
-        for (int fastIndex = 0; fastIndex < nums.size(); fastIndex++) {
-            if (val != nums[fastIndex]) {
-                nums[slowIndex++] = nums[fastIndex];
+        if (nums.size() == 0) return 0;
+
+        int slow = 0;
+        for (int fast = 0; fast < nums.size(); fast++) {
+            if (nums[fast] != val) {
+                nums[slow++] = nums[fast];
             }
         }
-        return slowIndex;
+
+        return slow;
     }
 };
 ```
@@ -102,16 +163,20 @@ public:
 class Solution {
 public:
     int removeDuplicates(vector<int>& nums) {
-        int slow = 0, n = nums.size();
-        if(!n) return -1;
-        if(n == 1) return 1;
+        if (nums.size() == 0) return 0;
 
-        for(int fast = 0; fast < n; fast++) {
-            if(nums[slow] != nums[fast]) {
-                nums[slow++] = nums[fast];
+        // slow 在外边，fast 用 for 遍历，这是隐藏的双层循环遍历方式
+        int slow = 0;
+        for (int fast = 0; fast < nums.size(); fast++) {
+            // 不判断的，即是遇到重复的了，要跳过
+            // 注意一定是 ++slow，而不是 slow++，否则会多覆盖前一个元素
+            // nums[++slow] = nums[fast] 是把每个重复的第一个元素进行往前复制，后边的都跳过了
+            if (nums[slow] != nums[fast]) {
+                nums[++slow] = nums[fast];
             }
         }
-        return slow;
+
+        return slow + 1;
     }
 };
 ```
@@ -122,19 +187,22 @@ public:
 class Solution {
 public:
     vector<int> sortedSquares(vector<int>& nums) {
-        int n = nums.size();
-        vector<int> res(n, 0);
-        int k = n - 1;
+        if (nums.size() == 0) return {};
+        if (nums.size() == 1) return {nums[0] * nums[0]};
 
-        for(int i = 0, j = n - 1; i <= j; ) {
-            if(nums[i] * nums[i] < nums[j] * nums[j]) {
-                res[k--] = nums[j] * nums[j];
-                j--;
-            }else {
-                res[k--] = nums[i] * nums[i];
-                i++;
+        vector<int> res(nums.size(), 0);
+        int index = nums.size() - 1;
+        int left = 0, right = nums.size() - 1;
+        while (left <= right && index >= 0) {
+            if (abs(nums[left]) < abs(nums[right])) {
+                res[index--] = nums[right] * nums[right];
+                right--;
+            } else {
+                res[index--] = nums[left] * nums[left];
+                left++;
             }
         }
+
         return res;
     }
 };
@@ -146,21 +214,30 @@ public:
 class Solution {
 public:
     string replaceSpace(string s) {
-        int oldsize = s.size(), cnt = 0;
-        for(int i = 0; i < oldsize; i++) {
-            if(s[i] == ' ') cnt++;
+        if (s.size() == 0) return "";
+        int cnt = 0;
+        for (char ch : s) {
+            if (ch == ' ') cnt++;
         }
-        s.resize(oldsize + cnt * 2);
-        int newsize = s.size();
-        for(int i = oldsize - 1, j = newsize - 1; i < j ; i--, j--) {
-            if(s[i] != ' ') s[j] = s[i];
-            else{
+        int old_size = s.size();
+        int new_size = old_size + 2 * cnt;
+        s.resize(new_size); // 注意是 2* 不是 3*
+
+        // string res(n, ' '); // 可以这样定义某个长度的字符串
+        // 下边用空间O(1)的方法，也就是原数组基础上去做
+        int i = old_size - 1, j = new_size - 1;
+        while (i >= 0 && j >= 0) {
+            if (s[i] != ' ') {
+                s[j--] = s[i--];
+            } else {
                 s[j] = '0';
                 s[j - 1] = '2';
                 s[j - 2] = '%';
-                j = j - 2;
+                j = j - 3;
+                i--;
             }
         }
+
         return s;
     }
 };
@@ -174,19 +251,23 @@ public:
 class Solution {
 public:
     int minSubArrayLen(int target, vector<int>& nums) {
-        int result = INT32_MAX;
-        int sum = 0, i = 0;
-        int n = nums.size();
-        if (n < 1) return 0;
-        for(int j = 0; j < n; j++) {
+        if (nums.size() == 1) return nums[0] >= target ? 1 : 0;
+
+        int res = INT_MAX;
+        int i = 0;
+        int sum = 0;
+        for (int j = 0; j < nums.size(); j++) {        
             sum += nums[j];
-            while(sum >= target) {
+            // 一定是 while，否则比如 [2,3,1,2,4,3] 会越过 [1,2,4] 这一部分 
+            while (sum >= target) {  
                 int length = j - i + 1;
-                result = result > length ? length : result;
-                sum -= nums[i++];
-            }
+                if (res > length) res = length;
+                sum -= nums[i]; // 一定要记得 sum 减去 nums[i]，而且要在 i++ 之前
+                i++;
+            }     
         }
-        return result == INT32_MAX ? 0 : result;
+
+        return res == INT_MAX ? 0 : res; // 记得还要判断一下是否是初始值
     }
 };
 ```
@@ -197,30 +278,38 @@ public:
 class Solution {
 public:
     vector<vector<int>> threeSum(vector<int>& nums) {
-        int n = nums.size();
-        if(n < 3) return {};
-        sort(nums.begin(), nums.end());
         vector<vector<int>> res;
-        for(int i = 0; i < n; i++) {
-            if(nums[i] > 0) return res;
-            if(i > 0 && nums[i] == nums[i - 1]) continue;
-            int left = i + 1, right = n - 1;            
-            while(left < right) {
-                if(nums[i] + nums[left] + nums[right] > 0) {
+        if (nums.size() < 3) return res;
+
+        // 1. 一定要排序
+        // 2. nums[i] = a, nums[left] = b, nums[right] = c
+        // 3. i,left,right 都要分别去重
+        sort(nums.begin(), nums.end());
+        for (int i = 0; i < nums.size(); i++) {
+            if (nums[i] > 0) return res;
+            if (i > 0 && nums[i] == nums[i - 1]) continue;  // nums[i] == nums[i + 1] 是错误的去重
+
+            int left = i + 1, right = nums.size() - 1;  // left = i + 1
+            while (left < right) {
+                if (nums[i] + nums[left] + nums[right] > 0) {
                     right--;
-                    while(left < right && nums[right] == nums[right + 1]) right--;
-                } else if(nums[i] + nums[left] + nums[right] < 0) {
+                    while (left < right && nums[right] == nums[right + 1]) right--;
+                } else if (nums[i] + nums[left] + nums[right] < 0) {
                     left++;
-                    while(left <  right && nums[left] == nums[left - 1]) left++;
+                    while (left < right && nums[left] == nums[left - 1]) left++; 
                 } else {
                     res.push_back(vector<int>{nums[i], nums[left], nums[right]});
+                    // // 去重逻辑应该放在找到一个三元组之后 ??
+                    // while (right > left && nums[right] == nums[right - 1]) right--;
+                    // while (right > left && nums[left] == nums[left + 1]) left++;
                     right--;
                     left++;
-                    while(left < right && nums[right] == nums[right + 1]) right--;
-                    while(left <  right && nums[left] == nums[left - 1]) left++;
+                    while (left < right && nums[right] == nums[right + 1]) right--;
+                    while (left < right && nums[left] == nums[left - 1]) left++; 
                 }
             }
         }
+
         return res;
     }
 };
@@ -232,34 +321,34 @@ public:
 class Solution {
 public:
     vector<vector<int>> fourSum(vector<int>& nums, int target) {
-        int n = nums.size();
-        if(n < 4) return {};
         vector<vector<int>> res;
-        sort(nums.begin(), nums.end());
+        if (nums.size() < 4) return res;
 
-        for(int k = 0; k < n; k++) {
-            if(k > 0 && nums[k] == nums[k - 1]) continue;
-            for(int i = k + 1; i < n; i++) {   // i = k + 1
-                if(i > k + 1 && nums[i] == nums[i - 1]) continue;
-                int left = i + 1;
-                int right = n - 1;
-                while(left < right) {
-                    if(nums[k] + nums[i] - target > - nums[left] - nums[right]) {
+        sort(nums.begin(), nums.end());
+        // 千万不要忘记去重，四个都要去重，尤其是 i,j 容易忘记
+        for (int i = 0; i < nums.size(); i++) {
+            if (i > 0 && nums[i] == nums[i - 1]) continue;
+            for (int j = i + 1; j < nums.size(); j++) {
+                if (j > i + 1 && nums[j] == nums[j - 1]) continue;
+                int left = j + 1, right = nums.size() - 1;
+                while (left < right) {
+                    if ((long) nums[i] + nums[j] + nums[left] + nums[right] > target) { // 注意整型溢出
                         right--;
-                        while(left < right && nums[right] == nums[right + 1]) right--;
-                    } else if(nums[k] + nums[i] - target < - nums[left] - nums[right]) {
+                        while (left < right && nums[right] == nums[right + 1]) right--; 
+                    } else if((long) nums[i] + nums[j] - target < - nums[left] - nums[right]) {
                         left++;
-                        while(left < right && nums[left] == nums[left - 1]) left++;
+                        while (left < right && nums[left] == nums[left - 1]) left++;
                     } else {
-                        res.push_back(vector<int>{nums[k], nums[i], nums[left], nums[right]});
-                        left++;
+                        res.push_back(vector<int>{nums[i], nums[j], nums[left], nums[right]});
                         right--;
-                        while(left < right && nums[right] == nums[right + 1]) right--;
-                        while(left < right && nums[left] == nums[left - 1]) left++;
+                        left++;
+                        while (left < right && nums[right] == nums[right + 1]) right--; 
+                        while (left < right && nums[left] == nums[left - 1]) left++;
                     }
                 }
-            }
+            } 
         }
+
         return res;
     }
 };
@@ -280,21 +369,35 @@ struct ListNode {
 ### 删除元素 #203
 
 ```c++
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
 class Solution {
 public:
     ListNode* removeElements(ListNode* head, int val) {
         ListNode* dummyHead = new ListNode(0);
         dummyHead->next = head;
         ListNode* cur = dummyHead;
-        while(cur->next != nullptr) {
-            if(cur->next->val == val) {
+
+        // 一定是去判断 cur->next 
+        while (cur->next != nullptr) {
+            if (cur->next->val == val) {
                 ListNode* tmp = cur->next;
                 cur->next = cur->next->next;
                 delete tmp;
-            }else {
+            } else {
                 cur = cur->next;
             }
         }
+
+        // 别忘了删除虚拟头结点，而且要返回新的头结点也就是 dummyHead->next，因为之前的 head 有可能已经被删除了
         head = dummyHead->next;
         delete dummyHead;
         return head;
@@ -324,15 +427,18 @@ void addAtIndex(int index, int val) {
 class Solution {
 public:
     ListNode* reverseList(ListNode* head) {
-        ListNode* tmp;
+        if (!head) return nullptr;
+
+        ListNode* pre = nullptr;  // 可以定义为 nullptr
         ListNode* cur = head;
-        ListNode* pre = nullptr;
-        while(cur) {
+        ListNode* tmp;  // 提到循环前边定义
+        while (cur != nullptr) {  // 判断cur, 而不是 cur->next
             tmp = cur->next;
             cur->next = pre;
             pre = cur;
             cur = tmp;
         }
+
         return pre;
     }
 };
@@ -346,8 +452,12 @@ public:
     ListNode* swapPairs(ListNode* head) {
         ListNode* dummyHead = new ListNode(0);
         dummyHead->next = head;
+
+        // 不用定义两个 pre 和 cur，只要一个cur
+        // 定义一个虚拟头结点，让 cur 指向它，方便后续操作
+        // 注意 while 循环里要判断 cur->next 以及 cur->next->next 都不为空
         ListNode* cur = dummyHead;
-        while(cur->next != nullptr && cur->next->next != nullptr) {
+        while (cur->next != nullptr && cur->next->next != nullptr) {
             ListNode* tmp1 = cur->next;
             ListNode* tmp2 = cur->next->next->next;
 
@@ -355,8 +465,11 @@ public:
             cur->next->next = tmp1;
             cur->next->next->next = tmp2;
             cur = cur->next->next;
+            // delete tmp1;  // 不要删除啊，这不是删除元素，tmp是有具体指向某个元素的
         }
+
         return dummyHead->next;
+
     }
 };
 ```
@@ -367,23 +480,25 @@ public:
 class Solution {
 public:
     ListNode* removeNthFromEnd(ListNode* head, int n) {
-        ListNode* dummyHead = new ListNode(0);
-        dummyHead->next = head;
-        ListNode* fast = dummyHead;
-        ListNode* slow = dummyHead;
-
-        while(n-- && fast != nullptr) {
+        ListNode* dummyNode = new ListNode(0);
+        dummyNode->next = head;
+        // 快慢指针，也是双指针的一种
+        ListNode* slow = dummyNode;
+        ListNode* fast = dummyNode;
+         
+        while (fast != nullptr && n--) {
             fast = fast->next;
         }
-        fast = fast->next;
-        while(fast != nullptr) {
-            fast = fast->next;
+        while (fast->next != nullptr) {
             slow = slow->next;
+            fast = fast->next;
         }
+
         ListNode* tmp = slow->next;
         slow->next = slow->next->next;
         delete tmp;
-        return dummyHead->next;
+
+        return dummyNode->next;
     }
 };
 ```
@@ -398,31 +513,37 @@ public:
         ListNode* curA = headA;
         ListNode* curB = headB;
 
-        while(curA != nullptr) {
-            lenA++;  
+        while (curA != nullptr) {
+            lenA++;
             curA = curA->next;
         }
-        while(curB != nullptr) {
+        while (curB != nullptr) {
             lenB++;
             curB = curB->next;
         }
 
+        // 千万不要忘了 curA,curB 要重新指向, 因为此时已经指向末尾了
         curA = headA;
         curB = headB;
-        if(lenB > lenA) {
+        if (lenB > lenA) {
             swap(lenA, lenB);
             swap(curA, curB);
         }
-        int gap = lenA - lenB;
-        while(gap--) {
+
+        int cnt = lenA - lenB;
+        while (cnt--) {
             curA = curA->next;
         }
-        while(curA != nullptr) {
-            if(curA == curB) return curA;
-            curA = curA->next;
-            curB = curB->next;
+        while (curA != nullptr) {
+            if (curA == curB) {
+                return curA;
+            } else {
+                curA = curA->next;
+                curB = curB->next;
+            }
         }
-        return nullptr;       
+
+        return nullptr;
     }
 };
 ```
@@ -433,21 +554,30 @@ public:
 class Solution {
 public:
     ListNode *detectCycle(ListNode *head) {
-        ListNode* fast = head;
         ListNode* slow = head;
-        while(fast != nullptr && fast->next != nullptr) {
-            fast = fast->next->next;
+        ListNode* fast = head;
+        // 1. 快慢指针，快指针两步两步的走，慢指针一步一步的走
+        //    快指针相当于每一次都靠近慢指针一步，如果有环的话，一定可以相遇
+        // 2. 如果判断有环，那么找到环的入口，是比较难的
+        //    假设head到入环口距离x个节点，入环口到相遇节点距离y，环的距离减去y的距离为z
+        //    那么slow走了 x+y, fast走了 x+n*(y+z)+y = 2*(x+y), 得 x = (n-1)*(z+y) + z
+        //    n=1的时候，x=z，让一个节点index1指向头结点，一个节点index2指向相遇节点，两个节点同时走，相遇节点就是入环口
+        //    n>1的时候，与 n=1 的情况相同，只不过 index2 多走了 n-1 圈而已
+        // 3. 一定注意，while 里的判断一定要有 fast，因为你判断 fast->next 不为空之前，当然要先判断 fast 不为空
+        while (fast && fast->next) {
             slow = slow->next;
-            if(fast == slow) {
-                ListNode* index1 = fast;
-                ListNode* index2 = head;
-                while(index1 != index2) {
+            fast = fast->next->next;
+            if (slow == fast) {
+                ListNode* index1 = head;
+                ListNode* index2 = slow;
+                while (index1 != index2) {
                     index1 = index1->next;
-                    index2 = index2->next; 
+                    index2 = index2->next;
                 }
                 return index1;
             }
         }
+
         return nullptr;        
     }
 };
@@ -461,17 +591,19 @@ public:
 class Solution {
 public:
     bool isAnagram(string s, string t) {
-        int record[26] = {0};
-        int i = 0;
-        for(i = 0; i < s.size(); i++) {
-            record[s[i]-'a']++;
+        if (s.size() != t.size()) return false;
+
+        // 必须要初始化, int a[n] = {0}, 是可以全部初始化为0的
+        // 但如果 int a[n] = {1}, 只会初始化为 1,0,0,0...
+        int cnt[26] = {0};  
+        for (int i = 0; i < s.size(); i++) {
+            cnt[s[i] - 'a']++;
+            cnt[t[i] - 'a']--;
         }
-        for(i = 0; i < t.size(); i++) {
-            record[t[i]-'a']--;
+        for (int c : cnt) {
+            if (c != 0) return false;
         }
-        for(i = 0; i < 26; i++) {
-            if(record[i] != 0) return false;
-        }
+
         return true;
     }
 };
@@ -483,14 +615,15 @@ public:
 class Solution {
 public:
     vector<int> intersection(vector<int>& nums1, vector<int>& nums2) {
+        unordered_set<int> set(nums1.begin(), nums1.end());
         unordered_set<int> res;
-        unordered_set<int> nums1_set(nums1.begin(), nums1.end());
 
-        for(int num : nums2) {
-            if(nums1_set.find(num) != nums1_set.end()) {
+        for (int num :nums2) {
+            if (set.find(num) != set.end()) {
                 res.insert(num);
             }
         }
+
         return vector<int>(res.begin(), res.end());
     }
 };
@@ -501,23 +634,28 @@ public:
 ```c++
 class Solution {
 public:
-    int getSum(int n) {
-        int sum = 0;
-        while(n) {
-            sum += (n % 10) * (n % 10);
-            n = n / 10;
-        }
-        return sum;        
-    }
     bool isHappy(int n) {
-        unordered_set<int> set;
-        while(1) {
-            int sum = getSum(n);
-            if(sum == 1) return true;
-            if(set.find(sum) != set.end()) return false;
-            set.insert(sum);
-            n = sum;
+        unordered_set<int> uset;
+        // 让 n 不停的变化，定义一个 sum，让 sum 保存中间的结果
+        // 定义一个 set，保存中间所有出现过的结果，一旦再次出现即将出现无限循环
+        while (1) {
+            
+            int sum = 0;
+            while (n) {
+                sum += (n % 10) * (n % 10);
+                n = n / 10;
+            }
+            
+            if (sum == 1) return true;
+            if (uset.find(sum) != uset.end()) {
+                return false;
+            } else {
+                uset.insert(sum);
+            }
+
+            n = sum;  //  千万别忘了最后要把 n 重新赋值为中间处理的结果
         }
+        return false;
     }
 };
 ```
@@ -528,16 +666,20 @@ public:
 class Solution {
 public:
     vector<int> twoSum(vector<int>& nums, int target) {
-        int n = nums.size();
+        // 如果不需要下标，只需要找到两个数，那么可以用 set，而且只能遍历一遍
+        // 此题目需要下标，所以必须用 map 去做
         unordered_map<int, int> map;
-        for(int i = 0; i < n; i++) { 
+
+        for (int i = 0; i < nums.size(); i++) {
+            // 技巧，定义 auto iter, 因为后边要用 iter->second
             auto iter = map.find(target - nums[i]);
-            if(iter != map.end()) {                
+            if (iter != map.end()) {
                 return {i, iter->second};
-            }else {
-                map[nums[i]] = i;                
-            }            
+            } else {
+                map[nums[i]] = i;
+            }
         }
+
         return {};
     }
 };
@@ -549,26 +691,75 @@ public:
 class Solution {
 public:
     int fourSumCount(vector<int>& nums1, vector<int>& nums2, vector<int>& nums3, vector<int>& nums4) {
-        unordered_map <int, int> umap;
-        for(int a : nums1) {
-            for(int b : nums2) {
+        // 默认初始化为0 ??
+        unordered_map<int, int> umap;
+
+        for (int a : nums1) {
+            for (int b : nums2) {
                 umap[a + b]++;
             }
         }
+
         int cnt = 0;
-        for(int c : nums3) {
-            for(int d : nums4) {
-                if(umap.find(0 - (c + d)) != umap.end()) {
+        for (int c : nums3) {
+            for (int d : nums4) {
+                if (umap.find(0 - (c + d)) != umap.end()) {
                     cnt += umap[0 - (c + d)];
                 }
             }
         }
+
         return cnt;
     }
 };
 ```
 
 ### 赎金信 #383
+```cpp
+// 数组
+class Solution {
+public:
+    bool canConstruct(string ransomNote, string magazine) {
+        // map 还是比较占空间，可以使用 数组 去保存
+        int record[26] = {0};
+
+        for (char ch : magazine) {
+            record[ch - 'a']++;
+        }
+        for (char ch : ransomNote) {
+            record[ch - 'a']--;
+            // 最好是判断在一个循环里，更方便
+            // 只有第一个是对于 magazine 遍历，才可以判断 <0，反过来得重新循环 record 才可以判断
+            if (record[ch - 'a'] < 0) return false;
+        }
+
+        return true;
+    }
+};
+// map
+class Solution {
+public:
+    bool canConstruct(string ransomNote, string magazine) {
+        unordered_map<char, int> umap;
+
+        for (char ch : ransomNote) {
+            umap[ch]++;
+        }
+        for (char ch :magazine) {
+            if (umap.find(ch) != umap.end()) {
+                umap[ch]--;
+            }
+            // 注意这里 else 是不可以直接判断为 false，因为magazine可能有很多用不到的字符
+        }
+        for (auto iter = umap.begin(); iter != umap.end(); iter++) {
+            // 这里一定是判断 >0 , 而不是 ==0, 因为有可能magazine很多相匹配的字符，会使它的值 <0
+            if (iter->second > 0) return false;  
+        }
+
+        return true;
+    }
+};
+```
 
 ## ⭐字符串
 
@@ -579,31 +770,32 @@ public:
 class Solution {
 public:
     void reverseString(vector<char>& s) {
-        for(int i = 0, j = s.size() - 1; i < s.size() /  2; i++, j--) {
+        // i < s.size() / 2 , 没有 =  
+        for (int i = 0, j = s.size() - 1; i < s.size() / 2; i++, j--) {
             swap(s[i], s[j]);
         }
     }
 };
 ```
 
-### 反转字符串 #541
-
+### 反转字符串II #541
 ```c++
-// II.
 class Solution {
 public:
-    void reverse(string& s, int start, int end) {
-        for(int i = start, j = end - 1; i < start + (end - start) / 2; i++, j--) {  // i < start +
+    void reverse(string& s, int begin, int end) {
+        if (begin >= end) return;
+        // 当下标用 start 和 end 计算的时候，要千万注意边界怎么表示的
+        // 这里 i < (end - begin) / 2 就是错的，一定要在前边加上 begin！！！ 
+        for (int i = begin, j = end -  1; i < begin + (end - begin) / 2; i++, j--) {
             swap(s[i], s[j]);
         }
-     }
+    } 
     string reverseStr(string s, int k) {
-        int n = s.size();
-        for(int i = 0; i < n; i += 2 * k) {
-            if(i + k < n) {
+        for (int i = 0; i < s.size(); i += 2 * k) {
+            if (i + k - 1 < s.size() - 1) {
                 reverse(s, i, i + k);
             } else {
-                reverse(s, i, n);
+                reverse(s, i, s.size());
             }
         }
         return s;
@@ -613,14 +805,16 @@ public:
 
 ### 翻转字符串里的单词  #151
 
-### 左旋转字符串 #58
+### 左旋转字符串 #O-58
 
 ```c++
 // 1.
 class Solution {
 public:
     string reverseLeftWords(string s, int n) {
-        reverse(s.begin(), s.begin() + n);
+        // 不开辟空间，在原字符串上改
+        // s.beigin()指向第一个元素，s.end()指向最后一个元素的下一个
+        reverse(s.begin(), s.begin() + n);  // [begin, begin + n) 左开右闭
         reverse(s.begin() + n, s.end());
         reverse(s.begin(), s.end());
         return s;
@@ -630,12 +824,12 @@ public:
 class Solution {
 public:
     string reverseLeftWords(string s, int n) {
-        string res = string(s);
+        string res = s; // res复制s，对res改动不会对s改动
         int j = 0;
-        for(int i = n; i < s.size(); i++) {
+        for (int i = n; i < s.size(); i++) {
             res[j++] = s[i];
         }
-        for(int i = 0; i < n; i++) {
+        for (int i = 0; i < n; i++) {
             res[j++] = s[i];
         }
         return res;
@@ -648,37 +842,43 @@ public:
 ```c++
 class Solution {
 public:
-    void getNext(int* next, string& s) {
-        int j = 0;
+    void getNext(int* next, const string& s) {
+        // 1. 计算next数组, next[i] 代表的是在s这个字符串上, 下标 i 以及之前的字符串中的最长相等前后缀的长度
+        // 2. next[i] 也指示着当 s[i]和s[j]不匹配的时候，要回退哪个下标上
+        //    回退到最长长度这个数的下标上，正好之前的匹配好的长度就是这个最长长度，因为下标从0开始
+        // 3. 计算next数组的本质，是把模式字符串既作为主串，也作为模式串，进行模式匹配
+        // 4. 前缀不包括首元素，后缀不包括结尾元素，所以主串从 i=1 开始遍历
+        int j = 0; 
         next[0] = 0;
-        for(int i = 1; i < s.size(); i++) { // i = 1 !
-            while(j > 0 && s[i] != s[j]) {
+        for (int i = 1; i < s.size(); i++) {
+            while (j > 0 && s[i] != s[j]) { // 不相等的时候要一直回退，直到相等或者回退到模式串的首元素
                 j = next[j - 1];
             }
-            if(s[i] == s[j]) {
+            if (s[i] == s[j]) {
                 j++;
             }
+            // j++ 完之后，j的大小就代表的是已经匹配好的字符串的长度
             next[i] = j;
         }
     }
     int strStr(string haystack, string needle) {
-        int n = needle.size();
-        if(!n) return 0; 
-        int next[n];
+        // next数组长度跟模式串相等
+        int next[needle.size()];
         getNext(next, needle);
 
         int j = 0;
-        for(int i = 0; i < haystack.size(); i++) { // i = 0
-            while(j > 0 && haystack[i] != needle[j]) {
+        for (int i = 0; i < haystack.size(); i++) {
+            while (j > 0 && haystack[i] != needle[j]) {
                 j = next[j - 1];
             }
-            if(haystack[i] == needle[j]) {
+            if (haystack[i] == needle[j]) {
                 j++;
             }
-            if(j == n) {
-                return (i - j + 1);
+            if (j == needle.size()) {  // 是双等号 == ！！！！！！
+                return i - j + 1;  // [i-j+1, ..., i] 长度刚好是 j, 也就是 needle.size() 
             }
         }
+
         return -1;
     }
 };
@@ -726,7 +926,6 @@ bool repeatedSubstringPattern (string s) {
     return false;
 }
 ```
-
 ## ⭐栈与队列
 
 ### 栈实现队列 #232
