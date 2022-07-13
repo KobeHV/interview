@@ -933,36 +933,37 @@ bool repeatedSubstringPattern (string s) {
 ```c++
 class MyQueue {
 public:
-    stack<int> stack_in;
-    stack<int> stack_out;
+    stack<int> s1;
+    stack<int> s2;
     MyQueue() {
 
-    }    
+    }
     
     void push(int x) {
-        stack_in.push(x);
-    }    
+        s1.push(x);
+    }
     
     int pop() {
-        if(stack_out.empty()) {
-            while(!stack_in.empty()) {
-                stack_out.push(stack_in.top());
-                stack_in.pop();
+        if (s1.empty() && s2.empty()) return -1;
+        if (s2.empty()) {
+            while (!s1.empty()) {
+                s2.push(s1.top());
+                s1.pop();
             }
-        }
-        int res = stack_out.top();
-        stack_out.pop();
-        return res;
-    }   
+        } 
+        int top = s2.top();
+        s2.pop();
+        return top;
+    }
     
     int peek() {
-        int res = this->pop();
-        stack_out.push(res);
-        return res;
-    }   
+        int top = this->pop();
+        s2.push(top);  // 一定是 s2.push(), 因为pop操作里，一定是在s2上进行pop的
+        return top;
+    }
     
     bool empty() {
-        return stack_in.empty() && stack_out.empty();
+        return s1.empty() && s2.empty();
     }
 };
 ```
@@ -972,32 +973,34 @@ public:
 ```c++
 class MyStack {
 public:
-    queue<int> q;
+    queue<int> que;
     MyStack() {
 
     }
     
     void push(int x) {
-        q.push(x);
+        que.push(x);
     }
     
     int pop() {
-        int size = q.size();
-        while(--size) {
-            q.push(q.front());
-            q.pop();
+        // 用一个队列模拟栈，依次把队首的元素push到队尾，留下最后一个元素即可
+        int size = que.size();
+        size--;
+        while (size--) {
+            que.push(que.front());
+            que.pop();
         }
-        int res = q.front();
-        q.pop();
-        return res;
+        int top = que.front();
+        que.pop();
+        return top;
     }
     
     int top() {
-        return q.back();
+        return que.back();
     }
     
     bool empty() {
-        return q.empty();
+        return que.empty();
     }
 };
 ```
@@ -1009,13 +1012,17 @@ class Solution {
 public:
     bool isValid(string s) {
         stack<char> st;
-        for(int i = 0; i < s.size(); i++) {
-            if(s[i] == '(') st.push(')');
-            else if(s[i] == '[') st.push(']');
-            else if(s[i] == '{') st.push('}');
-            else if(st.empty() || st.top()!= s[i]) return false;
-            else st.pop();
+        for (char ch : s) {
+            if (ch == '(') st.push(')');
+            else if (ch == '[') st.push(']');
+            else if (ch == '{') st.push('}');
+            else {
+                // 一定注意，因为要用到 st.top 或者 st.pop, 那么一定要记着先判断是不是为空
+                if (!st.empty() && st.top() == ch) st.pop();
+                else return false; 
+            }
         }
+
         return st.empty();
     }
 };
@@ -1029,21 +1036,22 @@ class Solution {
 public:
     string removeDuplicates(string s) {
         stack<char> st;
-        for(char ch : s) {
-            if(st.empty() || ch != st.top()) { // st.empty() is necessary
-                st.push(ch);
-            } else {
+        for (char ch : s) {
+            if (!st.empty() && ch == st.top()) {  // 一定要注意判断是否为空！！！
                 st.pop();
+            } else {
+                st.push(ch);
             }
         }
 
         string res = "";
-        while(!st.empty()) {
-            res += st.top();  // string +=  
+        while (!st.empty()) {
+            res.push_back(st.top());  // res += st.top()
             st.pop();
         }
-        reverse(res.begin(),res.end());
-        return res;
+        reverse(res.begin(), res.end());
+
+        return res;        
     }
 };
 // 2. string
@@ -1070,21 +1078,28 @@ public:
 class Solution {
 public:
     int evalRPN(vector<string>& tokens) {
+        // 逆波兰表达式是一种后缀表达式，即运算符写在后面，去掉括号后无歧义, 其实相当于是二叉树中的后序遍历
+        // 栈操作：遇到数字入栈；遇到算符则取出栈顶两个数字进行计算，并将结果压入栈中
         stack<int> st;
-        for(int i = 0; i < tokens.size(); i++) {
-            if(tokens[i] == "+" || tokens[i] == "-" || tokens[i] == "*" || tokens[i] == "/") {
-                int num1 = st.top();
+        for (string str : tokens) {
+            if (str == "+" || str == "-" || str == "*" || str == "/") {
+                int a = st.top();
                 st.pop();
-                int num2 = st.top();
+                int b = st.top();
                 st.pop();
-                if(tokens[i] == "+") st.push(num2 + num1);
-                else if(tokens[i] == "-") st.push(num2 - num1);
-                else if(tokens[i] == "*") st.push(num2 * num1);
-                else if(tokens[i] == "/") st.push(num2 / num1);
+
+                int res;
+                if (str == "+") res = b + a;
+                else if (str == "-") res = b - a;
+                else if (str == "*") res = b * a;
+                else if (str == "/") res = b / a;
+
+                st.push(res); // 最后不要忘了把运算的结果 push 进去
             } else {
-                st.push(stoi(tokens[i]));
+                st.push(stoi(str));
             }
         }
+
         return st.top();
     }
 };
@@ -1093,32 +1108,66 @@ public:
 ### 前k个高频元素 #347
 
 ```c++
+// priority_queue
 class Solution {
 public:
-    struct cmp{  // operator
+    // 1. struct {
+    //        bool operator()(int a, int b){ 
+    //             return a > b;
+    //        }
+    //    }
+    struct cmp {
         bool operator()(pair<int, int>& p1, pair<int, int>& p2) {
-            return p1.second > p2.second;
+            return p1.second > p2.second;  // 小顶堆，与 vector 排序顺序相反
         }
     };
-
     vector<int> topKFrequent(vector<int>& nums, int k) {
-        unordered_map<int, int> map;
-        for(int num : nums) {
-            map[num]++;
+        unordered_map<int, int> umap;
+        for (int num : nums) {
+            umap[num]++;
         }
         
+        // 2. priority_queue<Type, Container, Functional>
+        // 3. 优先队列默认大顶堆，堆顶元素是最大的，每次pop就是pop堆顶元素，插入在队尾插入
+        // 4. 因为要维护前k个最大的，不能把大的pop出去，所以定义一个小顶堆
         priority_queue<pair<int, int>, vector<pair<int, int>>, cmp> pri_que;
-        for(unordered_map<int, int>::iterator it = map.begin(); it != map.end(); it++) {  // spell:iterator,begin
-            pri_que.push(*it);
-            if(pri_que.size() > k) {
+        for (auto iter = umap.begin(); iter != umap.end(); iter++) { // unordered_map<int, int>::iterator
+            pri_que.push(*iter);  // *iter
+            if (pri_que.size() > k) {
                 pri_que.pop();
             }
         }
-        
-        vector<int> res(k);  // (k)
-        for(int i = k - 1; i >= 0; i--) {
-            res[i] = pri_que.top().first;  // 1 top not front  2 .first
-            pri_que.pop();  // not forget pop
+
+        vector<int> res(k);
+        for (int i = k - 1; i >= 0; i--) {  // 小顶堆每次pop的都是最小的，所以倒序遍历
+            res[i] = pri_que.top().first;
+            pri_que.pop();
+        }
+
+        return res;
+    }
+};
+// map
+class Solution {
+public:
+    // 要加 static, 但是不知道为什么
+    // return a > b, 意味着 a > b 的时候，a排在b的前面，也就是从大到小排序
+    static bool cmp(const pair<int, int>& a, const pair<int, int>& b) {
+        return a.second > b.second;
+    }
+    vector<int> topKFrequent(vector<int>& nums, int k) {
+        unordered_map<int, int> umap;
+        for (int num : nums) {
+            umap[num]++;
+        }
+
+        // sort 无法对 map 进行排序，所以可以先转为 vector 然后再排序
+        // pair<int, int> 用 .first .second 去访问元素
+        vector<pair<int, int>> vec(umap.begin(), umap.end());
+        sort(vec.begin(), vec.end(), cmp);
+        vector<int> res(k);
+        for (int i = 0; i < k; i++) {  // 从小到大排序也可以，就是最后要倒序遍历
+            res[i] = vec[i].first;
         }
         return res;
     }
@@ -1131,6 +1180,47 @@ public:
 
 ```c++
 // 1.
+class Solution {
+public:
+    class Myque {
+    public:
+        // c++ 的 stack, queue 底层实现其实默认都是双向队列 deque
+        // 这里用 deque 实现符合本题目条件的单调队列，维持队列元素从队首到队尾是单调的，本题目是单调递减
+        deque<int> que;
+        // pop: 如果队首元素等于滑动窗口即将要滑走的元素，那么直接pop_front就可以。如果不相等，就不操作。
+        void pop(int val) {
+            if (!que.empty() && que.front() == val) {
+                que.pop_front();
+            }
+        }
+        // push: 如果要push进来的元素大于队尾元素，那么需要pop_back掉队尾的元素，一直到push进来的元素小于等于队尾元素为止，因为要保证单调性。
+        void push (int val) {
+            while (!que.empty() && val > que.back()) {
+                que.pop_back();
+            }
+            que.push_back(val);
+        }
+        int front () {
+            return que.front();
+        }
+    };
+    vector<int> maxSlidingWindow(vector<int>& nums, int k) {
+        Myque my_que;
+        vector<int> res;
+        for (int i = 0; i < k; i++) {  // 先把第一个滑动窗口push进队列
+            my_que.push(nums[i]);
+        }
+        res.push_back(my_que.front());
+        for (int i = k; i < nums.size(); i++) {
+            my_que.pop(nums[i - k]);
+            my_que.push(nums[i]);
+            res.push_back(my_que.front());
+        }
+
+        return res;
+    }
+};
+// 2.
 class Solution {
 public:
     vector<int> maxSlidingWindow(vector<int>& nums, int k) {
@@ -1157,7 +1247,7 @@ public:
         return res;
     }
 };
-// 2.
+// 3.
 class Solution {
 public:
     vector<int> maxSlidingWindow(vector<int>& nums, int k) {
@@ -4397,10 +4487,9 @@ public:
 
 ## ⭐C++
 
-### STL
-
-```c++
-### vector
+## STL
+```cpp
+// vector
 vector<int> vec;
 vector<int> vec(n, val);
 vector<int> vec(set.begin(), set.end()); // unordered_set<int> set;
@@ -4408,6 +4497,7 @@ vector<int> vec(set.begin(), set.end()); // unordered_set<int> set;
 vec.size();
 vec.push_back(elem);
 vec.pop_back();
+vec.back();
 vec.resize(n);
 vec.empty();
 
@@ -4426,25 +4516,65 @@ sort(vec.begin(), vec.end(), cmp);
 return {};
 return {1, 2, 3};
 
-### set
+
+// set
 set<int> set;
 
 set.find(key);  // set.find(key) != set.end();
 set.count();
 set.insert(val);
 
-### map
+
+// map
 map<int, string> map;
 
 map.find(key);
-map.count();
+map.count(key);
 map.insert(pair<int, string>(1, "abc"));
 map[1] = "abc";
 
-auto iter = map.find(val);
+auto iter_1 = map.find(val);
 for (auto iter = umap.begin(); iter != umap.end(); iter++)
 iter->first;
 iter->second;
+
+// stack
+stack<int> st;
+st.push(x);
+st.pop();  // void
+st.top();
+st.empty();
+
+
+// queue
+queue<int> qu;
+que.push(x);
+que.pop();
+que.front();
+que.back();
+
+// priority_queue 优先队列 （堆，默认是大顶堆）
+priority_queue<Type, Container, Functional>  // container 容器一般为 vector
+
+struct cmp {
+	bool operator()(pair<int, int>& p1, pair<int, int>& p2) {
+		return p1.second > p2.second;  // 小顶堆，与 vector 排序顺序相反
+	}
+};
+priority_queue<pair<int, int>, vector<pair<int, int>>, cmp> pri_que;
+
+p_que.push(x);
+p_que.pop();
+p_que.top(); // 堆顶元素
+
+
+// deque 双端队列
+deque.push_back();
+deque.pop_back();
+deque.push_front();
+deque.pop_front();
+deque.front();
+deque.back();
 ```
 
 ## ⭐面试题
