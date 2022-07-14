@@ -1276,21 +1276,30 @@ public:
 ### 归并排序
 
 ```c++
-void merge_sort(int q[], int l, int r){
-    if(l >= r) return;
+const int N = 1e6;
+int n;
+int q[N], temp[N];
+void merge_sort(int* q, int l, int r) {
+    if (l >= r) return;
+    // 1. [l, mid] && [mid + 1, r]
+    //    归并排序采用分治思路，先分再治(合)
     int mid = l + r >> 1;
-    merge_sort(q, l, mid);    // [l,mid] && [mid+1,r]
-    merge_sort(q, mid+1, r);  // 执行完后，说明两个区间已经排好序
+    merge_sort(q, l, mid);
+    merge_sort(q, mid + 1, r);
 
-    int k = 0, i = l, j = mid + 1;
-    while(i <= mid && j <= r){  
-        if(q[i] <= q[j]) temp[k ++] = q[i ++];
-        else temp[k ++] = q[j ++];
+    // 2. 上边执行完，则认为 [l,mid] 和 [mid+1,r] 分别完成了排序，那么下边要做就是归并起来
+    int i = l, j = mid + 1;
+    int k = 0;
+    while (i <= mid && j <= r) {
+        if (q[i] <= q[j]) temp[k++] = q[i++];
+        else temp[k++] = q[j++];
     }
-    while(i <= mid) temp[k ++] = q[i ++];  // 别忘了扫尾
-    while(j <= r) temp[k ++] = q[j ++];
-
-    for(int i = l, j = 0; i <= r; i ++, j ++) q[i] = temp[j];  // 复制回原数组
+    // 3. 一定别忘了扫尾
+    while (i <= mid) temp[k++] = q[i++];
+    while (j <= r) temp[k++] = q[j++];
+    for (int i = 0; j < k; i++) {
+        q[l + i] = temp[i];
+    }
 }
 ```
 
@@ -1299,85 +1308,108 @@ void merge_sort(int q[], int l, int r){
 ```c++
 class Solution {
 public:
-    vector<int> tmp;
-    int merge_sort_rp(vector<int>& nums, vector<int>& tmp, int l, int r) {
-        if(l >= r) return 0;
+    int merge_sort(vector<int>& nums, vector<int>& temp, int l, int r) {
+        if (l >= r) return 0;        
         int mid = l + r >> 1;
-        int res = merge_sort_rp(nums, tmp, l, mid) + merge_sort_rp(nums, tmp, mid + 1, r);
+        int res = merge_sort(nums, temp, l, mid) + merge_sort(nums, temp, mid + 1, r);
 
-        int i = l, j = mid  + 1, k = 0;
-        while(i <= mid && j <= r) {
-            if(nums[i] <= nums[j]) {
-                tmp[k++] = nums[i++];
+        // 1. [l, mid] && [mid + 1, r]
+        // 2. 当 nums[i] > nums[j] 时，统计逆序对的个数
+        //    因为左右两边都是排序好了的，因此 nums[i, mid] 都是大于 nums[j] 的，因此逆序对个数 mid-i+1.
+        //    虽然之前排序好的数，已经打乱了原来的顺序，但是在每一个合并的阶段，都把逆序对的个数加上了
+        //    因为每次合并的时候计算逆序对个数，只考虑左边大于右边的情况，所以不会计算重复
+        // 3. 也可以当 nums[i] <= nums[j] 时候，统计逆序对的个数
+        //    此时，nums[mid+1, j-1] 一定都是自小于 nums[i] 的，而且已经归并回temp辅助数组了，逆序对个数 j-1-(mid+1)+1 = j-mid-1
+        //    这里是 <= 有等号的时候，因为如果相等也是第一次碰到，不会说 j 前边还有跟 i 相等的
+        //    这个方法要注意，当最后收尾的时候，如果是对 nums[i], 依然要进行计算逆序对
+        // 4. 统计逆序对个数的时机选择哪一个都可以，选择一个就始终选择这一个，就不会出现漏或者重复的情况
+        int i = l, j = mid + 1;
+        int k = 0;
+       while(i <= mid && j <= r) {
+            if (nums[i] <= nums[j]) {
+                temp[k++] = nums[i++];
+                res += j - mid - 1;
             } else {
-                tmp[k++] = nums[j++];
-                res += mid - i + 1;
+                temp[k++] = nums[j++];
+                // res += mid - i + 1;
             }
         }
-        while(i <= mid) tmp[k++] = nums[i++];
-        while(j <= r) tmp[k++] = nums[j++];
-        for(int i = l, j = 0; i <= r; i++, j++) {
-            nums[i] = tmp[j];
+        while (i <= mid) {
+            temp[k++] = nums[i++];
+            res += j - mid - 1;
+        }
+        while (j <= r) {
+        	temp[k++] = nums[j++];
+        }
+        for (int i = 0; i < k; i++) {
+            nums[l + i] = temp[i];
         }
         return res;
     }
     int reversePairs(vector<int>& nums) {
-        int n = nums.size();
-        vector<int> tmp(n);
-        return merge_sort_rp(nums, tmp, 0, nums.size() - 1);
+        if (nums.size() <= 1) return 0;
+        vector<int> temp(nums.size());
+        return merge_sort(nums, temp, 0, nums.size() - 1);
     }
 };
 ```
 
-### 右边逆序数 #315
+### 元素右侧的逆序数 #315
 
 ```c++
 class Solution {
 public:
-    vector<pair<int, int>> tmp;
+    vector<pair<int, int>> temp;
     vector<int> res;
-    vector<int> countSmaller(vector<int>& nums) {
-        int n = nums.size();
-        vector<pair<int, int>> nums_index;
-        for(int i = 0; i < n; i++) {
-            nums_index.push_back(pair<int, int>(nums[i], i));
-        } 
-
-        tmp = vector<pair<int, int>>(n);
-        res = vector<int>(n, 0);
-
-        merge_sort(nums_index, 0, n - 1);
-
-        return res;
-    }
     void merge_sort(vector<pair<int, int>>& nums_index, int l, int r) {
-        if(l >= r) return;
-        
+        if (l >= r) return;
         int mid = l + r >> 1;
         merge_sort(nums_index, l, mid);
         merge_sort(nums_index, mid + 1, r);
-        merge(nums_index, l, mid, r);
-    }
-    void merge(vector<pair<int, int>>& nums_index, int l, int mid, int r){
-        int i = l, j = mid + 1, k = l;
-        while(i <= mid && j <= r) {
-            if(nums_index[i].first <= nums_index[j].first) {
-                res[nums_index[i].second] += j - mid -1;
-                tmp[k++] = nums_index[i++];
+        
+        // 3. 这个题只可以当 nums[i] <= nums[j] 时候，统计逆序对的个数
+        //    因为我们要计算的是某个元素右侧比它小的元素，如果当 nums[i]>nums[j] 的时候计算，就把好多元素混在一起了
+        //    此时，nums[mid+1, j-1] 一定都是自小于 nums[i] 的，而且已经归并回temp辅助数组了，逆序对个数 j-1-(mid+1)+1 = j-mid-1
+        //    这里是 <= 有等号的时候，因为如果相等也是第一次碰到，不会说 j 前边还有跟 i 相等的
+        //    这个方法要注意，当最后收尾的时候，如果是对 nums[i], 依然要进行计算逆序对
+        // 4. temp辅助数组一定也是跟 nums_index 一样的，同样需要记录坐标
+        //    坐标和数值一直绑定在一起，如果只归并了数值，那么后边复制回 nums_index 数组的时候，就跟数值匹配不上了
+        int i = l, j = mid + 1;  // j = mid + 1  不是 r !!!!
+        int k = l;
+        while (i <= mid && j <= r) {
+            if (nums_index[i].first <= nums_index[j].first) {
+                res[nums_index[i].second] += j - mid -1;  // res累加一定要在temp之前，否则i已经变了！！
+                temp[k++] = nums_index[i++];                
             } else {
-                tmp[k++] = nums_index[j++];
+                temp[k++] = nums_index[j++];
             }
         }
-        while(i <= mid) {
+        while (i <= mid) {
             res[nums_index[i].second] += j - mid -1;
-            tmp[k++] = nums_index[i++];
-        } 
-        while(j <= r) {
-            tmp[k++] = nums_index[j++];
+            temp[k++] = nums_index[i++];            
         }
-        for(i = l; i <= r; i++) {
-            nums_index[i] = tmp[i];
+        while (j <= r) {
+            temp[k++] = nums_index[j++];
         }
+
+        for (int i = l; i <= r; i++) {
+            nums_index[i] = temp[i];
+        }
+    }
+    vector<int> countSmaller(vector<int>& nums) {
+        // 1. 与之前单纯的求逆序对总和不一样的是，这个题要非常准确的知道哪一个元素的具体逆序对数
+        //    而在归并排序的过程中，元素都打乱了顺序，所以我们要记录 nums[i] 在原始数组中的下标
+        //    定义索引数组 nums_index, .first 是数的大小，用来比较进行归并排序， .second 是在原始数组里的下标
+        // 2. 定义的时候千万别给一个初始大小啊，否则后边的push_back全都加到后边了，前边全是0
+        vector<pair<int, int>> nums_index;  
+        for (int i = 0; i < nums.size(); i++) {
+            nums_index.push_back(pair<int, int>(nums[i], i));
+        }
+        temp = vector<pair<int, int>>(nums.size());
+        res = vector<int>(nums.size(), 0);
+
+        merge_sort(nums_index, 0, nums.size() - 1);
+        return res;
     }
 };
 ```
@@ -1385,17 +1417,26 @@ public:
 ### 快速排序
 
 ```c++
-void quick_sort(int q[], int l, int r) {
-    if (l >= r) return;//提前判断
+void quick_sort(int* q, int l, int r) {
+    if (l >= r) return;    
+    // 1. 下标 l-1 和 r+1
+    // 2. 3个 while 都是 < 
+    // 3. ++i, --j
+    // 4. 一定要判断 i < j
+    // 5. 跟merge_sort相反，qucik_sort的递归处理在后边
+    //    而且是 [l,j] && [j+1,r] 注意是 j ！！ 这里 i可不可以？
     int x = q[l + r >> 1];
-    int i = l - 1, j = r + 1;  // l-1, r+1
-    while (i < j) {  //都是<
+    int i = l - 1, j = r + 1;
+    while (i < j) {
         while (q[++i] < x);
         while (q[--j] > x);
-        if (i < j) swap(q[i], q[j]);
+        if (i < j) {
+            swap(q[i], q[j]); 
+        }
     }
-    quick_sort(q, l, j);  // l,j
-    quick_sort(q, j + 1, r);  // j+1,r
+
+    quick_sort(q, l, j);
+    quick_sort(q, j + 1, r);
 }
 ```
 
@@ -1404,30 +1445,38 @@ void quick_sort(int q[], int l, int r) {
 ```c++
 class Solution {
 public:
-    int quick_sort(vector<int>& nums, int l, int r, int k) {
-        if(l > r) return -1;
-        if(l == r) return nums[l];
+    int quick_sort_k(vector<int>& nums, int l, int r, int k) {
+        if (l > r) return -1;
+        if (l == r) return nums[l];
 
         int x = nums[l + r >> 1];
-        int i = l - 1, j = r + 1;        
-        while(i < j) {
-            while(nums[++i] < x);
-            while(nums[--j] > x);
-            if(i < j) swap(nums[i], nums[j]);
+        int i = l - 1, j = r + 1;
+        while (i < j) {
+            while (nums[++i] < x);
+            while (nums[--j] > x);
+            if (i < j) swap(nums[i], nums[j]);
         }
-        
+
+        // 1. 注意上边的快速排序是按照从小到大的顺序排序的
+        // 2. [l,j] && [j+1,r] 两个范围，右边的一定大于左边的所有元素
+        //    [l,i-1] && [i,r] 这个区间也可以, 快排这个区间应该可以，但是这个题超出时间限制不知道为啥
+        //    跳出循环的时候，一定是 i>=j, q[i-1]<x, q[i]>=x, q[j+1]>x, q[j]<=x, 所以决定了上边两个区间是对的
+        // 3. 所以，如果求第K个最大的数，当K<=right右边长度的时候，那么目标一定就在右边，因为右边是大的数
+        // 4. 为什么要先++i,--j, 是为了防止陷入死循环，因为如果i<j而且q[i]=x=q[j], 那么就会陷入死循环
+        int right = r - j;
+        if (k <= right) return quick_sort_k(nums, j + 1, r, k);
+        else return quick_sort_k(nums, l, j, k - right);
+    }
+    int findKthLargest(vector<int>& nums, int k) {
+        return quick_sort_k(nums, 0, nums.size() - 1, k);
+    }
+};
         // int left = j - l + 1;  // 第K个最小的数
         // if(k <= left) return quick_sort(nums, l, j, k);
         // else return quick_sort(nums, j + 1, r, k - left);
-        int right = r - j;
-        if(k <= right) return quick_sort(nums, j + 1, r, k);  // [l,j] && [j+1,r] 长度分别为 <j-i+1>和<r-j>
-        else return quick_sort(nums, l, j, k - right);  // k-right
-    }
-    int findKthLargest(vector<int>& nums, int k) {
-        return quick_sort(nums, 0, nums.size() - 1, k);
-    }
-};
 ```
+
+### 拓扑排序 #210
 
 ## ⭐二叉树
 
