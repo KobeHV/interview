@@ -892,17 +892,20 @@ public:
 class Solution {
 public:
     bool repeatedSubstringPattern(string s) {
-        int n = s.size();
-        for(int i = 1; i <= n / 2; i++) {  // i = 1
-            if(n % i == 0) {
-                bool match = true;  // before for()
-                for(int j = i; j < n; j++) {                    
-                    if(s[j] != s[j - i]) {
-                        match = false;
-                        break;  // break
-                    }                    
+        if (s.size() == 1) return false;
+
+        // 如果字符串s存在子串s'重复出现的情况，那么这个子串s'一定是s的前缀，并且s的长度是s'长度的整倍数
+        // 每次选择 [0,i) 这个范围的子串，然后从 j=i 开始遍历主串s，必须满足 s[j]=s[j-i]，否则[0,i)的子串不可以构成主串s
+        for (int i = 1; i <= s.size() / 2; i++) {
+            if (s.size() % i == 0) {  // 整倍数
+                bool flag = true;
+                for (int j = i; j < s.size(); j++) {
+                    if (s[j] != s[j - i]) {
+                        flag = false;
+                        break;
+                    }
                 }
-                if(match) return true;
+                if (flag == true) return true;
             }
         }
         return false;
