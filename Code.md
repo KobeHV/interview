@@ -1478,6 +1478,50 @@ public:
 
 ### 拓扑排序 #210
 
+```cpp
+class Solution {
+public:
+    vector<int> findOrder(int numCourses, vector<vector<int>>& prerequisites) {
+        // 1. （有向图）拓扑排序：BFS+贪心。（DFS也可以，但是BFS最经典）
+        // 2. 入度为0的节点加入队列，pop出去的节点的相邻节点的入度减一，当入度为0时加入队列
+        unordered_map<int, int> inDegree;
+        unordered_map<int, vector<int>> adjust;
+        for (auto item : prerequisites) {
+            int course = item[0];
+            int pre = item[1];
+            inDegree[course]++;
+            adjust[pre].push_back(course);
+        }
+
+        queue<int> que;
+        for (int i = 0; i < numCourses; i++) {
+            if (inDegree.find(i) == inDegree.end()) {
+                que.push(i);
+            }
+        }
+
+        vector<int> res;
+        while (!que.empty()) {
+            int pre = que.front();
+            res.push_back(pre);
+            que.pop();
+            
+            for (int course : adjust[pre]) {
+                inDegree[course]--;
+                if (inDegree[course] == 0) {
+                    que.push(course);
+                    inDegree.erase(course);
+                }
+            }
+        }
+        // 3. 拓扑排序还可以判断有向图是否有环，如果最后inDegree不为空，说明有没有遍历完的节点，即存在环。
+        //    为了实现这个，在每次入度数减为0要加入队列的时候，都要记得inDegree要清除该节点才行
+        if (!inDegree.empty()) return {};
+        return res;
+    }
+};
+```
+
 ## ⭐二叉树
 
 ### 定义
@@ -4536,7 +4580,8 @@ public:
 
 ## ⭐C++
 
-## STL
+### STL
+
 ```cpp
 // vector
 vector<int> vec;
