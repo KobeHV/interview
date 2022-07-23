@@ -1166,6 +1166,7 @@ public:
 
         // sort 无法对 map 进行排序，所以可以先转为 vector 然后再排序
         // pair<int, int> 用 .first .second 去访问元素
+        // 注意是 vector<pair<int,int>>，没有 vector<int, int> 的写法
         vector<pair<int, int>> vec(umap.begin(), umap.end());
         sort(vec.begin(), vec.end(), cmp);
         vector<int> res(k);
@@ -1283,6 +1284,7 @@ const int N = 1e6;
 int n;
 int q[N], temp[N];
 void merge_sort(int* q, int l, int r) {
+    // 0. 千万别忘了终止判断！！！merge和quick都需要
     if (l >= r) return;
     // 1. [l, mid] && [mid + 1, r]
     //    归并排序采用分治思路，先分再治(合)
@@ -1326,6 +1328,7 @@ public:
         //    这里是 <= 有等号的时候，因为如果相等也是第一次碰到，不会说 j 前边还有跟 i 相等的
         //    这个方法要注意，当最后收尾的时候，如果是对 nums[i], 依然要进行计算逆序对
         // 4. 统计逆序对个数的时机选择哪一个都可以，选择一个就始终选择这一个，就不会出现漏或者重复的情况
+        //    一定要明白，一定是谁归并回（落回）辅助数组的时候，就统计谁的逆序对数量，因为归并回去了，所以不会重复
         int i = l, j = mid + 1;
         int k = 0;
        while(i <= mid && j <= r) {
@@ -1421,6 +1424,7 @@ public:
 
 ```c++
 void quick_sort(int* q, int l, int r) {
+    // 0. 千万别忘了终止判断！！！merge和quick都需要
     if (l >= r) return;    
     // 1. 下标 l-1 和 r+1
     // 2. 3个 while 都是 < 
@@ -3619,7 +3623,7 @@ void bag_01() {
     }
     
     // 一维数组-模板
-    vector<int> dp(bagWeight + 1, 0);    
+    vector<int> dp(bagWeight + 1, 0);  // 注意dp数组定义的大小是 bagWeight+1
     for (int i = 0; i < weight.size(); i++) {
          // 背包重量的【遍历必须在里边】。如果放在外边，那么背包只放了一个物品；放在里边，相当于考虑了 0...i 这些物品
          // 一维dp数组，用【倒序】，保证了物品不会重复放，而且本质还是对二维数组的遍历，右下角的值依赖上一层左上角的值
@@ -4674,83 +4678,4 @@ deque.front();
 deque.back();
 ```
 
-## ⭐面试题
 
-### 字符串转为整数
-
-将一个字符串转换成一个整数，要求不能使用字符串转换整数的库函数。数值为0或者字符串不是一个合法的数值则返回0。
-
-注意：（1）字符串中可能出现任意符号，出现除 +/- 以外符号时直接输出0.（2）字符串中可能出现 +/- 且仅可能出现在字符串首位。 
-
-```c++
-class Solution {
-public:
-    bool isvalid(char ch) {
-        if(!(ch >= '0' && ch <= '9')) return false;
-        return true;
-    }
-    int StrToInt(string str) {
-        int n = str.size();
-        int sum = 0, cnt = 1;
-        int flag = 1;
-        
-        for(int i = n - 1; i >= 0; i--) {
-            char ch = str[i];
-            if(ch == '+') continue;
-            else if(ch == '-') {
-                flag = -1;
-                continue;
-            }
-            else if(!isvalid(str[i])) return 0;
-            sum += (str[i] - '0') * cnt;
-            cnt *= 10;
-        }
-        return flag * sum;        
-    }
-};
-```
-
-### 两数之和
-
-输入一个递增排序的数组array和一个数字S，在数组中查找两个数，使得他们的和正好是S，如果有多对数字的和等于S，返回任意一组即可，如果无法找出这样的数字，返回一个空数组即可。 
-
-```c++
-// 1. 这种做法不对，会重复使用，比如 [1,5,11],10 的样例会返回 [5,5]
-// 错在两个循环上，遍历一次就可以了
-class Solution {
-public:
-    vector<int> FindNumbersWithSum(vector<int> array,int sum) {
-        unordered_set<int> set;
-        int n = array.size();
-        if(n < 2) return {};
-        
-        for(int i = 0; i < n; i++) {
-            set.insert(array[i]);
-        }
-        
-        for(int i = 0; i < n; i++) {
-            auto iter = set.find(sum - array[i]);
-            if(iter != set.end()) return {array[i], sum - array[i]};
-        }
-        
-        return {};        
-    }
-};
-// 2. 
-class Solution {
-public:
-    vector<int> FindNumbersWithSum(vector<int> array,int sum) {
-        unordered_set<int> set;
-        int n = array.size();
-        if(n < 2) return {};
-        
-        for(int i = 0; i < n; i++) {
-            auto iter = set.find(sum - array[i]);
-            if(iter != set.end()) return {array[i], sum - array[i]};
-            else set.insert(array[i]);
-        }
-        
-        return {};        
-    }
-};
-```
